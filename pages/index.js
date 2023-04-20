@@ -1,124 +1,125 @@
-import Image from 'next/image'
-import { Inter } from 'next/font/google'
+import Image from "next/image";
+import { Inter } from "next/font/google";
+import { Poppins } from "next/font/google";
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import ContinuousQuestionField from "../components/continuousQuestionField";
+import NominalQuestionField from "../components/nominalQuestionField";
+import ContinuousChoiceField from "../components/continuousChoiceField";
+import NominalChoiceField from "../components/nominalChoiceField";
 
-const inter = Inter({ subsets: ['latin'] })
+export default function DisplayField() {
+  const [questions, setQuestions] = useState([]);
+  const [decision, setDecision] = useState("");
+  const [answers, setAnswers] = useState({});
+  const [modelName, setModelName] = useState("");
 
-export default function Home() {
+  useEffect(() => {
+    const url = "https://api.up2tom.com/v3/models/58d3bcf97c6b1644db73ad12";
+    fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: "token 9307bfd5fa011428ff198bb37547f979",
+      },
+    })
+      .then((response) => response.json())
+      .then((responseBody) => {
+        setModelName(responseBody.data.attributes.name);
+        setQuestions(responseBody.data.attributes.metadata.attributes);
+      });
+  }, []);
+
+  const setAnswer = (fieldName, fieldValue) => {
+    answers[fieldName] = fieldValue;
+    setAnswers(answers);
+  };
+
+  //console.log(questions);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const requestBody = {
+      data: {
+        type: "scenario",
+        attributes: {
+          input: answers,
+        },
+      },
+    };
+
+    const url = "https://api.up2tom.com/v3/decision/58d3bcf97c6b1644db73ad12";
+    fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: "token 9307bfd5fa011428ff198bb37547f979",
+        "content-type": "application/vnd.api+json",
+      },
+      body: JSON.stringify(requestBody),
+    }) 
+      .then((response) => response.json())
+      .then((responseBody) => {
+        console.log(responseBody)
+        setDecision(responseBody.data.attributes.decision);
+      });
+  };
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">pages/index.js</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="flex flex-row justify-evenly mt-10">
+      <form
+        onSubmit={handleSubmit}
+        className="pt-6 pl-6 bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 w-1/2"
+      >
+        <h1 className="font-bold">{modelName}</h1>
+        {questions.map((item) => (
+          <div key={item.name} className="field-items">
+            <Field setAnswer={setAnswer} field={item} />
+          </div>
+        ))}
+        <div className="button-container">
+          <button
+            className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow"
+            type="submit"
           >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+            Submit
+          </button>
+          <button
+            className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow"
+            type="submit"
+          >
+            Clear
+          </button>
         </div>
+      </form>
+      <div className="flex text-5xl mt-20">
+        <h1>{decision}</h1>
       </div>
+    </div>
+  );
+}
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700/10 after:dark:from-sky-900 after:dark:via-[#0141ff]/40 before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
+function Field(props) {
+  //console.log(props.field);
+  if (props.field.type === "Continuous") {
+    return (
+      <div>
+        <ContinuousQuestionField
+          field={props.field}
+          setAnswer={props.setAnswer}
+        />
+        <ContinuousChoiceField
+          field={props.field}
+          setAnswer={props.setAnswer}
         />
       </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`${inter.className} mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p
-            className={`${inter.className} m-0 max-w-[30ch] text-sm opacity-50`}
-          >
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`${inter.className} mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p
-            className={`${inter.className} m-0 max-w-[30ch] text-sm opacity-50`}
-          >
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`${inter.className} mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p
-            className={`${inter.className} m-0 max-w-[30ch] text-sm opacity-50`}
-          >
-            Discover and deploy boilerplate example Next.js&nbsp;projects.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`${inter.className} mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p
-            className={`${inter.className} m-0 max-w-[30ch] text-sm opacity-50`}
-          >
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
+    );
+  } else if (props.field.type === "Nominal") {
+    return (
+      <div>
+        <NominalQuestionField field={props.field} setAnswer={props.setAnswer} />
+        <NominalChoiceField field={props.field} setAnswer={props.setAnswer} />
       </div>
-    </main>
-  )
+    );
+  } else {
+    console.log("Type not found");
+  }
 }
